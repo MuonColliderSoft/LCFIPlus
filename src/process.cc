@@ -27,8 +27,12 @@ using namespace lcfiplus::algoEtc;
 
 namespace lcfiplus {
 
+
+
 void PrimaryVertexFinder::init(Parameters* param) {
   Algorithm::init(param);
+
+  verboseDebug = param->get("VerbosityDebug", false);
 
   _vertex = 0;
 
@@ -50,11 +54,17 @@ void PrimaryVertexFinder::init(Parameters* param) {
 
   _priVtxCfg->maxD0 = param->get("PrimaryVertexFinder.TrackMaxD0", 20.);
   _priVtxCfg->maxZ0 = param->get("PrimaryVertexFinder.TrackMaxZ0", 20.);
-  _priVtxCfg->minVtxPlusFtdHits = param->get("PrimaryVertexFinder.TrackMinVtxFtdHits", 1);
-  _priVtxCfg->minTpcHits = param->get("PrimaryVertexFinder.TrackMinTpcHits", 999999);
-  _priVtxCfg->minTpcHitsMinPt = param->get("PrimaryVertexFinder.TrackMinTpcHitsMinPt", 999999);
-  _priVtxCfg->minFtdHits = param->get("PrimaryVertexFinder.TrackMinFtdHits", 999999);
-  _priVtxCfg->minVtxHits = param->get("PrimaryVertexFinder.TrackMinVxdHits", 999999);
+
+//added
+  _priVtxCfg->maxD0Err = param->get("PrimaryVertexFinder.TrackMaxD0Err", .1);
+  _priVtxCfg->maxZ0Err = param->get("PrimaryVertexFinder.TrackMaxZ0Err", .1);
+
+//removed bc detector geometry does not correspond
+  //_priVtxCfg->minVtxPlusFtdHits = param->get("PrimaryVertexFinder.TrackMinVtxFtdHits", 1);
+  //_priVtxCfg->minTpcHits = param->get("PrimaryVertexFinder.TrackMinTpcHits", 999999);
+  //_priVtxCfg->minTpcHitsMinPt = param->get("PrimaryVertexFinder.TrackMinTpcHitsMinPt", 999999);
+  //_priVtxCfg->minFtdHits = param->get("PrimaryVertexFinder.TrackMinFtdHits", 999999);
+  //_priVtxCfg->minVtxHits = param->get("PrimaryVertexFinder.TrackMinVxdHits", 999999);
 
   _chi2th = param->get("PrimaryVertexFinder.Chi2Threshold", 25.);
 
@@ -63,7 +73,6 @@ void PrimaryVertexFinder::init(Parameters* param) {
 }
 
 void PrimaryVertexFinder::process() {
-  bool verbose = false;
   Event* event = Event::Instance();
 
   // clearing old vertices
@@ -72,18 +81,18 @@ void PrimaryVertexFinder::process() {
     _vertex->clear();
   }
 
+  if(verboseDebug) cout << "PrimaryVertexFinder: retrieving and selecting tracks" << endl;
   // cut bad tracks
   TrackVec& tracks = event->getTracks();
   TrackVec passedTracks = TrackSelector() (tracks, *_priVtxCfg);
-  if (verbose)
-    cout << "PrimaryVertexFinder / track selection: " << passedTracks.size() << "/" << tracks.size() << " accepted." << endl;
+  if(1) cout << "PrimaryVertexFinder / track selection: " << passedTracks.size() << "/" << tracks.size() << " accepted." << endl;
 
+  if(verboseDebug) cout << "PrimaryVertexFinder: vertex finding..." << endl;
   // primary vertex finder
   Vertex* vtx = findPrimaryVertex(passedTracks,_chi2th,_beamspotConstraint,_beamspotSmearing);
   if (vtx) _vertex->push_back(vtx);
   else cout << "PrimaryVertexFinder: No primary vertex found." << endl; 
-  if (verbose)
-    cout << "PrimaryVertexFinder: " << vtx->getTracks().size() << " tracks associated to the primary vertex." << endl;
+  if(verboseDebug) cout << "PrimaryVertexFinder: " << vtx->getTracks().size() << " tracks associated to the primary vertex." << endl;
 }
 
 void PrimaryVertexFinder::end() {
@@ -116,20 +125,27 @@ void BuildUpVertex::init(Parameters* param) {
   _secVtxCfg->minPt = param->get("BuildUpVertex.TrackMinPt", 0.1);
   _secVtxCfg->maxInnermostHitRadius = 1e10;
 
+  //added
+  _secVtxCfg->minR0 = param->get("BuildUpVertex.TrackMinR0", 0.);
+  _secVtxCfg->minD0Sig = param->get("BuildUpVertex.TrackMinD0Sig",0.);
+  _secVtxCfg->minZ0Sig = param->get("BuildUpVertex.TrackMinZ0Sig",0.);
+
   _secVtxCfg->maxD0Err = param->get("BuildUpVertex.TrackMaxD0Err", .1);
   _secVtxCfg->maxZ0Err = param->get("BuildUpVertex.TrackMaxZ0Err", .1);
 
-  _secVtxCfg->minTpcHits = param->get("BuildUpVertex.TrackMinTpcHits", 999999);
-  _secVtxCfg->minTpcHitsMinPt = param->get("BuildUpVertex.TrackMinTpcHitsMinPt", 999999);
-  _secVtxCfg->minFtdHits = param->get("BuildUpVertex.TrackMinFtdHits", 999999);
-  _secVtxCfg->minVtxHits = param->get("BuildUpVertex.TrackMinVxdHits", 999999);
-  _secVtxCfg->minVtxPlusFtdHits = param->get("BuildUpVertex.TrackMinVxdFtdHits", 1);
+//removed bc detector geometry does not correspond
+//  _secVtxCfg->minTpcHits = param->get("BuildUpVertex.TrackMinTpcHits", 999999);
+//  _secVtxCfg->minTpcHitsMinPt = param->get("BuildUpVertex.TrackMinTpcHitsMinPt", 999999);
+//  _secVtxCfg->minFtdHits = param->get("BuildUpVertex.TrackMinFtdHits", 999999);
+//  _secVtxCfg->minVtxHits = param->get("BuildUpVertex.TrackMinVxdHits", 999999);
+//  _secVtxCfg->minVtxPlusFtdHits = param->get("BuildUpVertex.TrackMinVxdFtdHits", 1);
 
   // buildup parameters
   _chi2thpri = param->get("BuildUpVertex.PrimaryChi2Threshold", 25.);
   _chi2thsec = param->get("BuildUpVertex.SecondaryChi2Threshold", 9.);
   _massth = param->get("BuildUpVertex.MassThreshold", 10.);
   _posth = param->get("BuildUpVertex.MinDistFromIP", 0.3);
+  _posmax = param->get("BuildUpVertex.MaxDistFromIP", 5.0);
   _chi2orderinglimit = param->get("BuildUpVertex.MaxChi2ForDistOrder", 1.0);
 
   _doassoc = param->get("BuildUpVertex.AssocIPTracks", 1);
@@ -172,6 +188,7 @@ void BuildUpVertex::process() {
     primvtx = nullptr;
   }
 
+  if(verboseDebug) cout << "SecondaryVertexFinder: retrieving and selecting tracks" << endl;
   // cut bad tracks
   TrackVec& tracks = event->getTracks();
   TrackVec passedTracks = TrackSelector() (tracks, *_secVtxCfg, primvtx);
@@ -181,6 +198,7 @@ void BuildUpVertex::process() {
   cfg.chi2th = _chi2thsec;
   cfg.massth = _massth;
   cfg.v0selVertex.minpos = _posth;
+  cfg.v0selVertex.maxpos = _posmax;
   cfg.chi2orderinglimit = _chi2orderinglimit;
   if (!_v0sel) {
     cfg.v0selTrack.setNoV0Cut();
@@ -197,6 +215,7 @@ void BuildUpVertex::process() {
   cfg.beamspotConstraint = _beamspotConstraint;
   cfg.beamspotSmearing = _beamspotSmearing;
 
+  if(verboseDebug) cout << "SecondaryVertexFinder: vertex finding..." << endl;
   // build up vertexing
   vector<Vertex*> v0tmp;
   VertexFinderSuehara::buildUp(passedTracks, *_vertices, (_v0vertices ? *_v0vertices : v0tmp), _chi2thpri, cfg, &primvtx);
@@ -212,17 +231,19 @@ void BuildUpVertex::process() {
 
   // TODO: deletion of v0tmp
 
+
+  if(1) cout << "SecondaryVertexFinder: IP tracks re-association ..." << endl;
   if (_doassoc){
     //VertexFinderSuehara::associateIPTracks(*_vertices,primvtx, cfg);
     if(!_avf) VertexFinderSuehara::associateIPTracks(*_vertices,primvtx, cfg);
     else VertexFinderSuehara::associateIPTracksAVF(*_vertices,primvtx, cfg);
   }
 
-  /*
+/*
   for(unsigned int n=0;n<_vertices->size();n++){
   	(*_vertices)[n]->Print();
   }
-  */
+*/ 
 }
 
 void BuildUpVertex::end() {

@@ -15,17 +15,22 @@
 #include "EVENT/Cluster.h"
 
 #include <typeinfo>
+#include "streamlog/streamlog.h"
+#include "marlin/VerbosityLevels.h"
 
 using namespace std;
 
+//manual verbosity flag
+extern bool verboseDebug;
+
 namespace lcfiplus {
+
 
 // used for: track parameters, track covariance matrix, calorimeter subsystems
 namespace tpar {
 enum par { d0=0, z0, ph, om, td, parN };
-enum cov { d0d0=0, d0ph, phph, d0om, phom, omom, d0z0,
-           z0ph, z0om, z0z0, d0td, phtd, omtd, z0td, tdtd, covN
-         };
+//enum cov { d0d0=0, d0ph, phph, d0om, phom, omom, d0z0,z0ph, z0om, z0z0, d0td, phtd, omtd, z0td, tdtd, covN}; >>conformal tracking matrix
+enum cov {d0d0=0, d0z0, z0z0, d0ph, z0ph, phph, d0td, z0td, phtd, tdtd, d0om, z0om, phom, omtd, omom, covN};  //>>ACTS matrix
 enum hit { VTX=0, FTD, SIT, TPC, SET, ETD, hitN };
 enum calo { ecal=0, hcal, yoke, lcal, lhcal, bcal, caloN };
 }

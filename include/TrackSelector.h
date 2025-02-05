@@ -38,6 +38,9 @@ class TrackSelectorConfig {
   int minVtxHits;
   int minVtxPlusFtdHits;
 
+  double minR0;
+  double maxR0;
+
   TrackSelectorConfig() {
     minD0 = 0.;
     maxD0 = 1e+300;
@@ -56,10 +59,15 @@ class TrackSelectorConfig {
     minPt = 0.;
     maxInnermostHitRadius = 1e+300;
 
-    minTpcHits = 999999;
-    minTpcHitsMinPt = 999999;
-    minFtdHits = 999999;
-    minVtxHits = 999999;
+    //added
+    minR0 = 0.;
+    maxR0 = 1e+300;
+
+    //put to zero bc tracker geometry is different
+    minTpcHits = 0;
+    minTpcHitsMinPt = 0;
+    minFtdHits = 0;
+    minVtxHits = 0;
     minVtxPlusFtdHits = 0;
   }
 };
@@ -78,30 +86,88 @@ class TrackSelector {
   }
 
   bool passesCut(const Track* trk, const TrackSelectorConfig& cfg, const Vertex* ip = 0) {
-    // AND cuts
 
-    if (fabs(trk->getD0()) < cfg.minD0) return false;
-    if (fabs(trk->getD0()) > cfg.maxD0) return false;
-    if (sqrt(trk->getCovMatrix()[tpar::d0d0]) < cfg.minD0Err) return false;
-    if (sqrt(trk->getCovMatrix()[tpar::d0d0]) > cfg.maxD0Err) return false;
+    // AND cuts
+    if (fabs(trk->getD0()) < cfg.minD0) {
+      if(verboseDebug) std::cout << "MinD0: " << fabs(trk->getD0()) << " / " << cfg.minD0 << std::endl;
+      return false;
+    }
+    if (fabs(trk->getD0()) > cfg.maxD0) {
+      if(verboseDebug) std::cout << "MaxD0: " << fabs(trk->getD0()) << " / " << cfg.maxD0 << std::endl;
+      return false;
+    }
+    if (sqrt(trk->getCovMatrix()[tpar::d0d0]) < cfg.minD0Err) {
+      if(verboseDebug) std::cout << "MinD0Err: " << sqrt(trk->getCovMatrix()[tpar::d0d0])  << " / " << cfg.minD0Err << std::endl;
+      return false;
+    }
+    if (sqrt(trk->getCovMatrix()[tpar::d0d0]) > cfg.maxD0Err)  {
+      if(verboseDebug) std::cout << "MaxD0Err: " << sqrt(trk->getCovMatrix()[tpar::d0d0])  << " / " << cfg.maxD0Err << std::endl;
+      return false;
+    }
     double d0sig = fabs(trk->getD0()) / sqrt(trk->getCovMatrix()[tpar::d0d0]);
-    if ( d0sig < cfg.minD0Sig) return false;
-    if ( d0sig > cfg.maxD0Sig) return false;
+    if ( d0sig < cfg.minD0Sig) {
+      if(verboseDebug) std::cout << "MinD0Sig: " << d0sig << " / " << cfg.minD0Sig << std::endl;
+      return false;
+    }
+    if ( d0sig > cfg.maxD0Sig) {
+      if(verboseDebug) std::cout << "MaxD0Sig: " << d0sig << " / " << cfg.maxD0Sig << std::endl;
+      return false;
+    }
 
     double z0 = (ip ? fabs(trk->getZ0() - ip->getZ()) : fabs(trk->getZ0()) );
-    if (z0 < cfg.minZ0) return false;
-    if (z0 > cfg.maxZ0) return false;
-    if (sqrt(trk->getCovMatrix()[tpar::z0z0]) < cfg.minZ0Err) return false;
-    if (sqrt(trk->getCovMatrix()[tpar::z0z0]) > cfg.maxZ0Err) return false;
+    if (z0 < cfg.minZ0) {
+      if(verboseDebug) std::cout << "MinZ0: " << z0 << " / " << cfg.minZ0 << std::endl;
+      return false;
+    }
+    if (z0 > cfg.maxZ0) {
+      if(verboseDebug) std::cout << "MaxZ0: " << z0 << " / " << cfg.maxZ0 << std::endl;
+      return false;
+    }
+    if (sqrt(trk->getCovMatrix()[tpar::z0z0]) < cfg.minZ0Err) {
+      if(verboseDebug) std::cout << "MinZ0Err: " << sqrt(trk->getCovMatrix()[tpar::z0z0]) << " / " << cfg.minZ0Err << std::endl;
+      return false;
+    }
+    if (sqrt(trk->getCovMatrix()[tpar::z0z0]) > cfg.maxZ0Err) {
+      if(verboseDebug) std::cout << "MaxZ0Err: " << sqrt(trk->getCovMatrix()[tpar::z0z0]) << " / " << cfg.maxZ0Err << std::endl;
+      return false;
+    }
     double z0sig = z0 / sqrt(trk->getCovMatrix()[tpar::z0z0]);
-    if ( z0sig < cfg.minZ0Sig) return false;
-    if ( z0sig > cfg.maxZ0Sig) return false;
+    if ( z0sig < cfg.minZ0Sig) {
+      if(verboseDebug) std::cout << "MinZ0Sig: " << z0sig << " / " << cfg.minZ0Sig << std::endl;
+      return false;
+    }
+    if ( z0sig > cfg.maxZ0Sig) {
+      if(verboseDebug) std::cout << "MaxZ0Sig: " << z0sig << " / " << cfg.maxZ0Sig << std::endl;
+      return false;
+    }
 
-    if (sqrt(d0sig * d0sig + z0sig * z0sig) < cfg.minD0Z0Sig)return false;
-    if (sqrt(d0sig * d0sig + z0sig * z0sig) > cfg.maxD0Z0Sig)return false;
+    if (sqrt(d0sig * d0sig + z0sig * z0sig) < cfg.minD0Z0Sig) {
+      if(verboseDebug) std::cout << "MinD0Z0Sig: " << sqrt(d0sig * d0sig + z0sig * z0sig) << " / " << cfg.minD0Z0Sig << std::endl;
+      return false;
+    }
+    if (sqrt(d0sig * d0sig + z0sig * z0sig) > cfg.maxD0Z0Sig) {
+      if(verboseDebug) std::cout << "MaxD0Z0Sig: " << sqrt(d0sig * d0sig + z0sig * z0sig) << " / " << cfg.maxD0Z0Sig << std::endl;
+      return false;
+    }
 
-    if (trk->Pt() < cfg.minPt) return false;
-    if (trk->getRadiusOfInnermostHit() > cfg.maxInnermostHitRadius) return false;
+    if (trk->Pt() < cfg.minPt) {
+      if(verboseDebug) std::cout << "MinPt: " << trk->Pt() << " / " << cfg.minPt << std::endl;
+      return false;
+    }
+    if (trk->getRadiusOfInnermostHit() > cfg.maxInnermostHitRadius) {
+      if(verboseDebug) std::cout << "mMxInnermostHitRadius: " << trk->getRadiusOfInnermostHit()  << " / " << cfg.maxInnermostHitRadius << std::endl;
+      return false;
+    }
+
+    //added
+    if( sqrt( pow(trk->getD0(), 2) + pow(trk->getZ0(), 2) ) < cfg.minR0 ) {
+      if(verboseDebug) std::cout << "MinR0: " << sqrt( pow(trk->getD0(), 2) + pow(trk->getZ0(), 2) ) << " / " << cfg.minR0 << std::endl;
+      return false;
+    }
+    if( sqrt( pow(trk->getD0(), 2) + pow(trk->getZ0(), 2) ) > cfg.maxR0 ) {
+      if(verboseDebug) std::cout << "MaxR0: " << sqrt( pow(trk->getD0(), 2) + pow(trk->getZ0(), 2) ) << " / " << cfg.maxR0 << std::endl;
+      return false;
+    }
 
     // OR cuts
     if (trk->getFtdHits() >= cfg.minFtdHits) return true;

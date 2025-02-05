@@ -57,6 +57,7 @@ class BuildUpVertex : public Algorithm {
   double _chi2thsec;
   double _massth;
   double _posth;
+  double _posmax;
   double _chi2orderinglimit;
   int _v0sel;
 

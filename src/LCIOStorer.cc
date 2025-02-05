@@ -894,6 +894,14 @@ void LCIOStorer::WriteVertices(VertexVec* pvvtx, const char* newName, const char
     lciovtx->setProbability(flavtx->getProb());
     lciovtx->setAssociatedParticle(lciorp);
 
+    // additional parameters: chi^2 of each associated track
+    double tmpchi2;
+    vector<const Track*> tracks = flavtx->getTracks();
+    for(unsigned int i = 0; i < tracks.size(); i++){
+      tmpchi2 = flavtx->getChi2Track(tracks[i]);
+      lciovtx->addParameter(tmpchi2);
+    }
+
     /*
     cout << scientific << "ConvertVertex position: "
     	<< vpos[0] << ","

@@ -51,6 +51,7 @@ class TrackToPFOConverterProcessor : public Processor {
    */
   std::string _inputTrackCollectionName;
   std::string _outputPFOCollectionName;
+  double _bField;
 } ;
 
 #endif
