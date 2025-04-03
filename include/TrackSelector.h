@@ -41,6 +41,12 @@ class TrackSelectorConfig {
   double minR0;
   double maxR0;
 
+  //JET CONE SELECTOR
+  double jEta;
+  double jPhi;
+  double coneR;
+  bool useJetDirection;
+
   TrackSelectorConfig() {
     minD0 = 0.;
     maxD0 = 1e+300;
@@ -62,6 +68,12 @@ class TrackSelectorConfig {
     //added
     minR0 = 0.;
     maxR0 = 1e+300;
+
+    //jet
+    jEta = -999999.;
+    jPhi = -999999.;
+    coneR = 0.5;
+    useJetDirection = true;
 
     //put to zero bc tracker geometry is different
     minTpcHits = 0;
@@ -86,6 +98,18 @@ class TrackSelector {
   }
 
   bool passesCut(const Track* trk, const TrackSelectorConfig& cfg, const Vertex* ip = 0) {
+
+    // choose only jet cone direction
+    double trkPhi = trk->getPhi();
+    double trkTh = 0.5 * 3.14159 - atan(trk->getTanLambda());
+    double trkEta = -std::log( tan( 0.5*trkTh ) );
+    double minPhi2 = min( pow(trkPhi-cfg.jPhi, 2), pow( abs(trkPhi-cfg.jPhi) - 2.*3.14159 , 2) );
+    double dR = sqrt( minPhi2 + pow(trkEta-cfg.jEta, 2) );
+
+    if( dR > cfg.coneR && cfg.useJetDirection ){
+      if(verboseDebug) std::cout << "Outside Jet selection: " << dR << " / " << cfg.coneR << std::endl;
+      return false;
+    }
 
     // AND cuts
     if (fabs(trk->getD0()) < cfg.minD0) {
@@ -141,12 +165,25 @@ class TrackSelector {
       return false;
     }
 
-    if (sqrt(d0sig * d0sig + z0sig * z0sig) < cfg.minD0Z0Sig) {
-      if(verboseDebug) std::cout << "MinD0Z0Sig: " << sqrt(d0sig * d0sig + z0sig * z0sig) << " / " << cfg.minD0Z0Sig << std::endl;
+    //default has wrong eval of the uncertainty -> must consider covariance!
+    float d0 = trk->getD0();
+    z0 = (ip ? trk->getZ0() - ip->getZ() : trk->getZ0() );
+    float errd02 = trk->getCovMatrix()[tpar::d0d0];
+    float errz02 = trk->getCovMatrix()[tpar::z0z0];
+    float covd0z0 = trk->getCovMatrix()[tpar::d0z0];
+    float r0 = sqrt(d0*d0 + z0*z0);
+    float errR0 = sqrt( (d0*d0*errd02 + z0*z0*errz02 + 2*d0*z0*covd0z0)/pow(r0,2) );
+    if(std::isnan(errR0)){
+      errR0 = 999999.;
+      if(verboseDebug) std::cout << "Negative sqrt argument from R0 uncertainty !!" << std::endl;
+    }
+
+    if (r0/errR0 < cfg.minD0Z0Sig) {
+      if(verboseDebug) std::cout << "MinD0Z0Sig: " << r0/errR0 << " / " << cfg.minD0Z0Sig << std::endl;
       return false;
     }
-    if (sqrt(d0sig * d0sig + z0sig * z0sig) > cfg.maxD0Z0Sig) {
-      if(verboseDebug) std::cout << "MaxD0Z0Sig: " << sqrt(d0sig * d0sig + z0sig * z0sig) << " / " << cfg.maxD0Z0Sig << std::endl;
+    if (r0/errR0 > cfg.maxD0Z0Sig) {
+      if(verboseDebug) std::cout << "MaxD0Z0Sig: " << r0/errR0 << " / " << cfg.maxD0Z0Sig << std::endl;
       return false;
     }
 
