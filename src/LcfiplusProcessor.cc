@@ -120,6 +120,8 @@ void LcfiplusProcessor::init() {
       Globals::Instance()->setBField( MarlinUtil::getBzAtOrigin() );
     }
 
+    if(streamlog_level(WARNING)) std::cout << "Verbosity is WARNING" << std::endl;
+
     Globals::Instance()->setBeamSizeX(_beamSizeX);
     Globals::Instance()->setBeamSizeY(_beamSizeY);
     Globals::Instance()->setBeamSizeZ(_beamSizeZ);

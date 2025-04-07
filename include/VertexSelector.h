@@ -35,7 +35,7 @@ class VertexSelectorConfig {
   double convdirdot;
 
   VertexSelectorConfig() :
-    rejectdist(false), minpos(0.), maxpos(1e+300),
+    rejectdist(true), minpos(0.), maxpos(1e+300),
     rejectdistnegative(false), rejectdistor(false),
     rejectk0(false), k0width(0.), k0dirdot(0.),
     rejectl0(false), l0width(0.), l0dirdot(0.),

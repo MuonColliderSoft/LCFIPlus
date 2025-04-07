@@ -27,8 +27,12 @@ using namespace lcfiplus::algoEtc;
 
 namespace lcfiplus {
 
+
+
 void PrimaryVertexFinder::init(Parameters* param) {
   Algorithm::init(param);
+
+  verboseDebug = param->get("VerbosityDebug", false);
 
   _vertex = 0;
 
@@ -50,11 +54,21 @@ void PrimaryVertexFinder::init(Parameters* param) {
 
   _priVtxCfg->maxD0 = param->get("PrimaryVertexFinder.TrackMaxD0", 20.);
   _priVtxCfg->maxZ0 = param->get("PrimaryVertexFinder.TrackMaxZ0", 20.);
-  _priVtxCfg->minVtxPlusFtdHits = param->get("PrimaryVertexFinder.TrackMinVtxFtdHits", 1);
-  _priVtxCfg->minTpcHits = param->get("PrimaryVertexFinder.TrackMinTpcHits", 999999);
-  _priVtxCfg->minTpcHitsMinPt = param->get("PrimaryVertexFinder.TrackMinTpcHitsMinPt", 999999);
-  _priVtxCfg->minFtdHits = param->get("PrimaryVertexFinder.TrackMinFtdHits", 999999);
-  _priVtxCfg->minVtxHits = param->get("PrimaryVertexFinder.TrackMinVxdHits", 999999);
+
+//added
+  _priVtxCfg->maxD0Err = param->get("PrimaryVertexFinder.TrackMaxD0Err", .1);
+  _priVtxCfg->maxZ0Err = param->get("PrimaryVertexFinder.TrackMaxZ0Err", .1);
+
+  _priVtxCfg->minD0Z0Sig = param->get("PrimaryVertexFinder.TrackMinD0Z0Sig", 0.);
+  _priVtxCfg->maxD0Z0Sig = param->get("PrimaryVertexFinder.TrackMaxD0Z0Sig", 99999999.);
+  _priVtxCfg->useJetDirection = param->get("PrimaryVertexFinder.UseJetsDirection", false);
+
+//removed bc detector geometry does not correspond
+  //_priVtxCfg->minVtxPlusFtdHits = param->get("PrimaryVertexFinder.TrackMinVtxFtdHits", 1);
+  //_priVtxCfg->minTpcHits = param->get("PrimaryVertexFinder.TrackMinTpcHits", 999999);
+  //_priVtxCfg->minTpcHitsMinPt = param->get("PrimaryVertexFinder.TrackMinTpcHitsMinPt", 999999);
+  //_priVtxCfg->minFtdHits = param->get("PrimaryVertexFinder.TrackMinFtdHits", 999999);
+  //_priVtxCfg->minVtxHits = param->get("PrimaryVertexFinder.TrackMinVxdHits", 999999);
 
   _chi2th = param->get("PrimaryVertexFinder.Chi2Threshold", 25.);
 
@@ -63,7 +77,6 @@ void PrimaryVertexFinder::init(Parameters* param) {
 }
 
 void PrimaryVertexFinder::process() {
-  bool verbose = false;
   Event* event = Event::Instance();
 
   // clearing old vertices
@@ -72,18 +85,18 @@ void PrimaryVertexFinder::process() {
     _vertex->clear();
   }
 
+  if(verboseDebug) cout << "PrimaryVertexFinder: retrieving and selecting tracks" << endl;
   // cut bad tracks
   TrackVec& tracks = event->getTracks();
   TrackVec passedTracks = TrackSelector() (tracks, *_priVtxCfg);
-  if (verbose)
-    cout << "PrimaryVertexFinder / track selection: " << passedTracks.size() << "/" << tracks.size() << " accepted." << endl;
+  if(1) cout << "PrimaryVertexFinder / track selection: " << passedTracks.size() << "/" << tracks.size() << " accepted." << endl;
 
+  if(verboseDebug) cout << "PrimaryVertexFinder: vertex finding..." << endl;
   // primary vertex finder
   Vertex* vtx = findPrimaryVertex(passedTracks,_chi2th,_beamspotConstraint,_beamspotSmearing);
   if (vtx) _vertex->push_back(vtx);
   else cout << "PrimaryVertexFinder: No primary vertex found." << endl; 
-  if (verbose)
-    cout << "PrimaryVertexFinder: " << vtx->getTracks().size() << " tracks associated to the primary vertex." << endl;
+  if(verboseDebug) cout << "PrimaryVertexFinder: " << vtx->getTracks().size() << " tracks associated to the primary vertex." << endl;
 }
 
 void PrimaryVertexFinder::end() {
@@ -116,20 +129,33 @@ void BuildUpVertex::init(Parameters* param) {
   _secVtxCfg->minPt = param->get("BuildUpVertex.TrackMinPt", 0.1);
   _secVtxCfg->maxInnermostHitRadius = 1e10;
 
+  //added
+  _secVtxCfg->minR0 = param->get("BuildUpVertex.TrackMinR0", 0.);
+  _secVtxCfg->minD0Sig = param->get("BuildUpVertex.TrackMinD0Sig",0.);
+  _secVtxCfg->minZ0Sig = param->get("BuildUpVertex.TrackMinZ0Sig",0.);
+
   _secVtxCfg->maxD0Err = param->get("BuildUpVertex.TrackMaxD0Err", .1);
   _secVtxCfg->maxZ0Err = param->get("BuildUpVertex.TrackMaxZ0Err", .1);
 
-  _secVtxCfg->minTpcHits = param->get("BuildUpVertex.TrackMinTpcHits", 999999);
-  _secVtxCfg->minTpcHitsMinPt = param->get("BuildUpVertex.TrackMinTpcHitsMinPt", 999999);
-  _secVtxCfg->minFtdHits = param->get("BuildUpVertex.TrackMinFtdHits", 999999);
-  _secVtxCfg->minVtxHits = param->get("BuildUpVertex.TrackMinVxdHits", 999999);
-  _secVtxCfg->minVtxPlusFtdHits = param->get("BuildUpVertex.TrackMinVxdFtdHits", 1);
+  _secVtxCfg->minD0Z0Sig = param->get("BuildUpVertex.TrackMinD0Z0Sig", 0.);
+  _secVtxCfg->maxD0Z0Sig = param->get("BuildUpVertex.TrackMaxD0Z0Sig", 99999999.);
+
+  _secVtxCfg->coneR = param->get("BuildUpVertex.JetSelectionCone", 0.5); // put as parameter
+  _secVtxCfg->useJetDirection = param->get("PrimaryVertexFinder.UseJetsDirection", true);
+
+//removed bc detector geometry does not correspond
+//  _secVtxCfg->minTpcHits = param->get("BuildUpVertex.TrackMinTpcHits", 999999);
+//  _secVtxCfg->minTpcHitsMinPt = param->get("BuildUpVertex.TrackMinTpcHitsMinPt", 999999);
+//  _secVtxCfg->minFtdHits = param->get("BuildUpVertex.TrackMinFtdHits", 999999);
+//  _secVtxCfg->minVtxHits = param->get("BuildUpVertex.TrackMinVxdHits", 999999);
+//  _secVtxCfg->minVtxPlusFtdHits = param->get("BuildUpVertex.TrackMinVxdFtdHits", 1);
 
   // buildup parameters
   _chi2thpri = param->get("BuildUpVertex.PrimaryChi2Threshold", 25.);
   _chi2thsec = param->get("BuildUpVertex.SecondaryChi2Threshold", 9.);
   _massth = param->get("BuildUpVertex.MassThreshold", 10.);
   _posth = param->get("BuildUpVertex.MinDistFromIP", 0.3);
+  _posmax = param->get("BuildUpVertex.MaxDistFromIP", 5.0);
   _chi2orderinglimit = param->get("BuildUpVertex.MaxChi2ForDistOrder", 1.0);
 
   _doassoc = param->get("BuildUpVertex.AssocIPTracks", 1);
@@ -145,6 +171,9 @@ void BuildUpVertex::init(Parameters* param) {
   // primary vertex refitting parameters
   _beamspotConstraint = param->get("PrimaryVertexFinder.BeamspotConstraint", true);
   _beamspotSmearing = param->get("PrimaryVertexFinder.BeamspotSmearing", true);
+
+  //
+  _jetscolname = param->get("BuildUpVertex.OriginalJetCollectionName", string("JetOut_kt"));
 }
 
 void BuildUpVertex::process() {
@@ -172,15 +201,12 @@ void BuildUpVertex::process() {
     primvtx = nullptr;
   }
 
-  // cut bad tracks
-  TrackVec& tracks = event->getTracks();
-  TrackVec passedTracks = TrackSelector() (tracks, *_secVtxCfg, primvtx);
-
-
+//init vertex finder
   VertexFinderSuehara::VertexFinderSueharaConfig cfg;
   cfg.chi2th = _chi2thsec;
   cfg.massth = _massth;
   cfg.v0selVertex.minpos = _posth;
+  cfg.v0selVertex.maxpos = _posmax;
   cfg.chi2orderinglimit = _chi2orderinglimit;
   if (!_v0sel) {
     cfg.v0selTrack.setNoV0Cut();
@@ -197,32 +223,75 @@ void BuildUpVertex::process() {
   cfg.beamspotConstraint = _beamspotConstraint;
   cfg.beamspotSmearing = _beamspotSmearing;
 
-  // build up vertexing
-  vector<Vertex*> v0tmp;
-  VertexFinderSuehara::buildUp(passedTracks, *_vertices, (_v0vertices ? *_v0vertices : v0tmp), _chi2thpri, cfg, &primvtx);
-  if(haveToGetNewVertex) {
-    const vector<const Vertex*>* _vertex=nullptr;
-    Event::Instance()->Get(_primvtxcolname.c_str(), _vertex);
-    vector<const Vertex*>* _tmpVertex = const_cast<vector<const Vertex*>*> (_vertex);
-    if(_vertex && _vertex->size() == 1 && const_cast<Vertex*>((*_vertex)[0]) == nullptr) {
-      (*_tmpVertex)[0] =  primvtx ;
+//retrieve jets
+  vector<const Jet*> jets = event->getJets(_jetscolname.c_str()); //later put as input parameter, possibly filtered jets
+  //lcio::LCCollection* jetColl = event->getCollection(_jetscolname.c_str());
+
+  float jetEta, jetPhi, jx, jy, jz;
+  TrackVec& tracks = event->getTracks();
+  int countjets = 0;
+
+  for(auto jet : jets){
+
+    jx = jet->Px();
+    jy = jet->Py();
+    jz = jet->Pz();
+    /*lcio::ReconstructedParticle* jet = dynamic_cast<ReconstructedParticle*>( m_inputJetCalo->getElementAt(i) );
+    jx = jet->getMomentum()[0];
+    jy = jet->getMomentum()[1];
+    jz = jet->getMomentum()[2];*/
+    if(verboseDebug) cout << "Using jet: p = ( " << jx << " , " << jy << " , " << jz << " )" << endl;
+    jetEta = -std::log( tan( 0.5 * acos( jz / sqrt( jx*jx + jy*jy + jz*jz ) ) ) );
+    jetPhi = acos( jx / sqrt( jx*jx + jy*jy ) );
+    jetPhi = jy>0. ? jetPhi : -jetPhi;
+    _secVtxCfg->jEta = jetEta;
+    _secVtxCfg->jPhi = jetPhi;
+    
+    if(verboseDebug) cout << "SecondaryVertexFinder: retrieving and selecting tracks for jet " << countjets << endl;
+    // cut bad tracks and select only around jet
+    TrackVec passedTracks = TrackSelector() (tracks, *_secVtxCfg, primvtx); // add jet direction to cfg and filter
+
+    if(verboseDebug) cout << "SecondaryVertexFinder: vertex finding for jet " << countjets << endl;
+    // build up vertexing, use new temporary vectors
+    vector<Vertex*> svtmp;
+    vector<Vertex*> v0tmp;
+    VertexFinderSuehara::buildUp(passedTracks, svtmp, v0tmp, _chi2thpri, cfg, &primvtx);
+
+    if(haveToGetNewVertex) {
+      const vector<const Vertex*>* _vertex=nullptr;
+      Event::Instance()->Get(_primvtxcolname.c_str(), _vertex);
+      vector<const Vertex*>* _tmpVertex = const_cast<vector<const Vertex*>*> (_vertex);
+      if(_vertex && _vertex->size() == 1 && const_cast<Vertex*>((*_vertex)[0]) == nullptr) {
+        (*_tmpVertex)[0] =  primvtx ;
+      }
+  
+    }
+  
+    // TODO: deletion of v0tmp
+  
+    if(verboseDebug) cout << "SecondaryVertexFinder: IP tracks re-association for jet " << countjets << endl;
+    if (_doassoc){
+      //VertexFinderSuehara::associateIPTracks(*_vertices,primvtx, cfg);
+      if(!_avf) VertexFinderSuehara::associateIPTracks(svtmp, primvtx, cfg);
+      else VertexFinderSuehara::associateIPTracksAVF(svtmp, primvtx, cfg);
     }
 
+    //add vertices of the current jet to the global vector
+    _vertices->insert( _vertices->end(), svtmp.begin(), svtmp.end());
+
+    countjets++;
   }
 
-  // TODO: deletion of v0tmp
 
-  if (_doassoc){
-    //VertexFinderSuehara::associateIPTracks(*_vertices,primvtx, cfg);
-    if(!_avf) VertexFinderSuehara::associateIPTracks(*_vertices,primvtx, cfg);
-    else VertexFinderSuehara::associateIPTracksAVF(*_vertices,primvtx, cfg);
-  }
+  
 
-  /*
+
+
+/*
   for(unsigned int n=0;n<_vertices->size();n++){
   	(*_vertices)[n]->Print();
   }
-  */
+*/ 
 }
 
 void BuildUpVertex::end() {

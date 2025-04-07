@@ -51,12 +51,14 @@ class BuildUpVertex : public Algorithm {
 
   // parameters
   std::string _primvtxcolname;
+  std::string _jetscolname; //jet for track selection
 
   // vertex formation limits
   double _chi2thpri;
   double _chi2thsec;
   double _massth;
   double _posth;
+  double _posmax;
   double _chi2orderinglimit;
   int _v0sel;
 

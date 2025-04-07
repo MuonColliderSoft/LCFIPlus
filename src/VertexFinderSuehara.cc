@@ -12,6 +12,7 @@
 using namespace lcfiplus;
 using namespace lcfiplus::VertexFinderSuehara;
 
+
 #if 0
 vector<lcfiplus::Vertex*>* lcfiplus::VertexFinderSuehara::findCandidates(TrackVec& tracks, double chi2th, double massth, double ipchi2th) {
   vector<lcfiplus::Vertex*>* pvertices;
@@ -215,11 +216,11 @@ vector<lcfiplus::Vertex*>* lcfiplus::VertexFinderSuehara::findCandidates(TrackVe
 lcfiplus::Vertex* VertexFinderSuehara::findOne(list<const Track*>& tracks, double chi2th, double massth, bool removeTracks) {
   // copy tracks in the jet into a list
   //const vector<Track *> &v = jets[nj]->getTracks();
-  bool verbose = false;
+  //bool verbose = false;
 
   LcfiInterface lcfi;
 
-  if (verbose)
+  if (verboseDebug)
     cout << "Tracks: " << tracks.size() << endl;
   list<const Track*>::iterator trkit1, trkit2, trkit3, trkit4;
 
@@ -275,7 +276,7 @@ lcfiplus::Vertex* VertexFinderSuehara::findOne(list<const Track*>& tracks, doubl
   // pair with < chi2th not found
   if (curvtx == 0)return 0;
 
-  if (verbose)
+  if (verboseDebug)
     cout << "Chi2-minimum: " << curvtx->getChi2() << ", " << tr1->getId() << ", " << tr2->getId() << endl;
 
   if (removeTracks)tracks.remove(tr1);
@@ -315,7 +316,7 @@ lcfiplus::Vertex* VertexFinderSuehara::findOne(list<const Track*>& tracks, doubl
     vt.push_back(tra);
     if (removeTracks)tracks.remove(tra);
 
-    if (verbose)
+    if (verboseDebug)
       cout << "Track added. chi2: " << curvtx->getChi2() << ", " << tra->getId() << endl;
   } while (tracks.size()>0);
 
@@ -325,9 +326,9 @@ lcfiplus::Vertex* VertexFinderSuehara::findOne(list<const Track*>& tracks, doubl
 lcfiplus::Vertex* VertexFinderSuehara::findOne2(list<const Track*>& tracks, double chi2th, double massth, bool removeTracks) {
   // copy tracks in the jet into a list
   //const vector<Track *> &v = jets[nj]->getTracks();
-  bool verbose = false;
+  //bool verbose = false;
 
-  if (verbose)
+  if (verboseDebug)
     cout << "Tracks: " << tracks.size() << endl;
   list<const Track*>::iterator trkit1, trkit2;
 
@@ -394,7 +395,7 @@ lcfiplus::Vertex* VertexFinderSuehara::findOne2(list<const Track*>& tracks, doub
     }
   }
 
-  if (verbose && curvtx) {
+  if (verboseDebug && curvtx) {
     cout << "Vertex found with " << curvtx->getTracks().size() << " vertex, prob = " << curvtx->getProb() << ", mass = " << curvtx->getVertexMass();
     cout << ", pos = ( " << curvtx->getX() << ", " << curvtx->getY() << ", " << curvtx->getZ() << ")" << endl;
   }
@@ -419,7 +420,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
   list<const Track*>::iterator trkit1, trkit2;
   list<Vertex*>::iterator vit;
 
-  bool verbose = false;
+  //bool verbose = false;
 
   list<const Track*> v0tracks;
 
@@ -429,10 +430,11 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
   int ntr = tracks.size();
   int ntrmax = (ntr-1) * ntr / 2;
 
+  if(verboseDebug) cout << "GetVertexList: looping tracks ..." << endl;
   for (trkit1 = tracks.begin(); trkit1 != tracks.end(); trkit1 ++) {
     for (trkit2 = trkit1, trkit2 ++; trkit2 != tracks.end(); trkit2 ++) {
       nv ++;
-      if (verbose) {
+      if (verboseDebug) {
         cerr << "Vertex producing: " << nv << "/" << ntrmax << endl;
       }
 
@@ -459,6 +461,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
       vttmp.push_back(*trkit1);
       vttmp.push_back(*trkit2);
 
+      if(verboseDebug) cout << "GetVertexList: vertex fitting ..." << endl;
       Vertex* vtx = VertexFitterSimple_V() (vttmp.begin(), vttmp.end(), 0);
 
       double chi2 = max(vtx->getChi2Track(*trkit1), vtx->getChi2Track(*trkit2));
@@ -479,8 +482,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
 
       // direction & chi2 condition
       if (vpos.Dot((v1+v2).Vect()) > 0 && chi2 < cfg.chi2th) {	// trying 3+ vertex
-        if (verbose)
-          cout << "Vertex accepted." << endl;
+        if(verboseDebug) cout << "GetVertexList: Vertex accepted, associating tracks ..." << endl;
         Vertex* vtx2 = associateTracks(vtx, constVector(v0vtx), tracks, cfg);
         if (vtx2 != vtx) { // 3+ tracks
           delete vtx;
@@ -531,7 +533,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
     if (!deleted)vit++;
   }
 
-  if (verbose) {
+  if (verboseDebug) {
     cerr << "Vertex produced. 3tr: " << tr3list.size() << ", 2tr: " << tr2list.size() << endl;
   }
 
@@ -600,7 +602,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
       break; // all vertices gone
     }
 
-    if (verbose)
+    if (verboseDebug)
       cerr << "Sort finished." << endl;
 
     // vertex selected
@@ -608,7 +610,7 @@ void VertexFinderSuehara::GetVertexList(list<const Track*>& tracks, const Vertex
     if(cfg.avf) curvtx->setVertexingName("AVF");
     else curvtx->setVertexingName("chi2");
     vtx.push_back(curvtx);
-    if (verbose) {
+    if (verboseDebug) {
       cout << "Vertex found with " << curvtx->getTracks().size() << " tracks, prob = " << curvtx->getProb() << ", mass = " << curvtx->getVertexMass();
       cout << ", pos = ( " << curvtx->getX() << ", " << curvtx->getY() << ", " << curvtx->getZ() << ")" << endl;
       cout << "err = ( xx: " << curvtx->getCov()[Vertex::xx] << ", yy: " << curvtx->getCov()[Vertex::yy] << ", zz:" << curvtx->getCov()[Vertex::zz];
@@ -799,12 +801,14 @@ Vertex* VertexFinderSuehara::associateTracks(Vertex* vertex, const VertexVec& v0
 
 //chi2 decision
 void VertexFinderSuehara::associateIPTracks(vector<Vertex*>& vertices, Vertex* ip, VertexFinderSueharaConfig& cfg) {
-  bool verbose = false;
+  //bool verbose = false;
 
   vector<const Track*>::const_iterator it;
 
   Vertex* vbeam;
   algoEtc::makeBeamVertex(vbeam,cfg.beamspotSmearing);
+
+  if(verboseDebug) cout << "AssociateIPTracks: start vertex-tracks loop ..." << endl;
 
   for (unsigned int i=0; i<vertices.size(); i++) {
     if (vertices[i]->getPos().Mag()<cfg.minimumdistIP)continue;
@@ -846,8 +850,7 @@ void VertexFinderSuehara::associateIPTracks(vector<Vertex*>& vertices, Vertex* i
         delete vertices[i];
         vertices[i] = vtx;
 
-        if (verbose)
-          cout << "Track # " << (*it)->getId() << " moved to vertex " << i << ", chi2ip = " << chi2ip << ", chi2new = " << chi2new << endl;
+        if(verboseDebug) cout << "AssociateIPTracks: Track # " << (*it)->getId() << " moved to vertex " << i << ", chi2ip = " << chi2ip << ", chi2new = " << chi2new << endl;
       } else
         iptracks.push_back(*it);
     }
@@ -865,12 +868,12 @@ void VertexFinderSuehara::associateIPTracks(vector<Vertex*>& vertices, Vertex* i
 void VertexFinderSuehara::associateIPTracksAVF(vector<Vertex *> &vertices, Vertex *ip, VertexFinderSueharaConfig &cfg)
 {
 
-  bool verbose = false;
-
   vector<const Track *>::const_iterator it;
 
   Vertex *vbeam;
   algoEtc::makeBeamVertex(vbeam,cfg.beamspotSmearing);
+
+  if(verboseDebug) cout << "AssociateIPTracksAVF: start track loop ..." << endl;
 
   bool lflg=false;
   Vertex* ip2=ip;  //reserve ip                                                                                                                 
@@ -1004,8 +1007,7 @@ void VertexFinderSuehara::associateIPTracksAVF(vector<Vertex *> &vertices, Verte
       delete vertices[maxi1];
       vertices[maxi1] = vtx;
 
-      if(verbose)
-	cout << "Track # " << (*it)->getId() << " moved to vertex " << maxi1 << ", chi2ip = " << chi2ip << ", chi2new = " << chi2s[maxi1] << endl;
+      if(verboseDebug) cout << "AssociateOPTracksAVF: Track # " << (*it)->getId() << " moved to vertex " << maxi1 << ", chi2ip = " << chi2ip << ", chi2new = " << chi2s[maxi1] << endl;
     
       lflg=false;
 
@@ -1051,7 +1053,7 @@ void VertexFinderSuehara::buildUp(TrackVec& tracks, vector<Vertex*>& vtx, vector
     }
   }
 
-  //cout << "buildUp: secondary tracks " << residualTracks.size() << "/" << tracks.size() << endl;
+  if(1) cout << "buildUp: secondary tracks " << residualTracks.size() << "/" << tracks.size() << endl;
 
   // secondary vertex
   GetVertexList(residualTracks, ip, vtx, v0vtx, cfg);
@@ -1143,6 +1145,7 @@ vector<Vertex*> VertexFinderSuehara::makeSingleTrackVertices
 }
 
 void VertexFinderSuehara::optimizeTwoVertices(Vertex*& v1, Vertex*& v2, int nvr) {
+
   bool _verbose = false;
   double chi2sum = 0.;
 

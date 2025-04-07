@@ -34,6 +34,9 @@ TrackToPFOConverterProcessor::TrackToPFOConverterProcessor() : Processor("TrackT
                             "Ouptut collection",
                             _outputPFOCollectionName,
                             std::string("ConvertedTrackAsPFO") );
+
+  // magnetic field
+  registerOptionalParameter("Bfield", "Magnetic field for track conversion", _bField, double(5.));
 }
 
 TrackToPFOConverterProcessor::~TrackToPFOConverterProcessor() {}
@@ -51,7 +54,7 @@ void TrackToPFOConverterProcessor::processEvent( LCEvent* evt ) {
   LCCollectionVec* outCol = new LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE ) ;
 
   const double c = 2.99792458e8; // m*s^-1
-  const double B = 3.5;          // Tesla
+  const double B = _bField;          // Tesla
   const double mm2m = 1e-3;
   const double eV2GeV = 1e-9;
   const double eB = B*c*mm2m*eV2GeV;

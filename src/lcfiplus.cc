@@ -19,6 +19,9 @@
 #include "VertexFinderSuehara.h"
 #include "VertexFitterSimple.h"
 
+
+bool verboseDebug = false;
+
 namespace lcfiplus {
 
 // singleton operations
